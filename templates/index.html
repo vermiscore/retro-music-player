@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 Music Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #1e2a1e;
+    --bg2:      #253025;
+    --bg3:      #2d3a2d;
+    --card:     #2a3528;
+    --card2:    #324032;
+    --border:   rgba(180,165,130,0.15);
+    --accent:   #c4956a;
+    --accent2:  #8b6f47;
+    --cream:    #e8dfc8;
+    --cream2:   #d4c9b0;
+    --sage:     #7a9e7a;
+    --sage2:    #5a7a5a;
+    --text:     #e8dfc8;
+    --muted:    #8a9e8a;
+    --terra:    #b5704a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 背景テクスチャ */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(90,122,90,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(196,149,106,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ページ全体のラッパー */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 0 40px;
+  }
+
+  /* ヘッダー */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo svg { opacity: 0.7; }
+
+  .clock {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* タブ */
+  nav {
+    display: flex;
+    gap: 2px;
+    padding: 12px 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 8px 16px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  nav button:hover { color: var(--cream2); }
+
+  nav button.active {
+    color: var(--cream);
+    border-bottom-color: var(--accent);
+  }
+
+  /* タブコンテンツ */
+  .tab { display: none; padding: 24px; }
+  .tab.active { display: block; }
+
+  /* ── プレイヤータブ ── */
+  .player-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .player-layout { grid-template-columns: 1fr; }
+  }
+
+  /* アートワークカード */
+  .artwork-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .artwork {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* SVG植物アート */
+  .artwork svg {
+    width: 75%;
+    height: 75%;
+    opacity: 0.85;
+  }
+
+  .artwork.spinning svg {
+    animation: sway 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes sway {
+    from { transform: rotate(-2deg) scale(1); }
+    to   { transform: rotate(2deg) scale(1.03); }
+  }
+
+  .song-info { text-align: center; width: 100%; }
+
+  .song-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--cream);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .song-state {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* プログレスバー */
+  .progress-wrap {
+    width: 100%;
+    position: relative;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    margin-bottom: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sage2), var(--accent));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 1s linear;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: -3px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(196,149,106,0.5);
+  }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* コントロール */
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  .ctrl-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 36px; height: 36px;
+  }
+
+  .ctrl-btn:hover { color: var(--cream); transform: scale(1.1); }
+
+  .ctrl-btn.play-btn {
+    background: var(--accent);
+    color: var(--bg);
+    width: 48px; height: 48px;
+    box-shadow: 0 4px 16px rgba(196,149,106,0.3);
+  }
+
+  .ctrl-btn.play-btn:hover {
+    background: #d4a57a;
+    color: var(--bg);
+    transform: scale(1.05);
+  }
+
+  /* 音量 */
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .volume-row span { font-size: 11px; color: var(--muted); min-width: 28px; }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Up Next カード */
+  .upnext-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .section-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--cream);
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+
+  .playlist {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 300px;
+  }
+
+  .playlist::-webkit-scrollbar { width: 3px; }
+  .playlist::-webkit-scrollbar-track { background: transparent; }
+  .playlist::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+  }
+
+  .playlist-item:hover { background: var(--card2); }
+
+  .playlist-item.current {
+    background: var(--terra);
+    background: rgba(181,112,74,0.25);
+    border: 1px solid rgba(181,112,74,0.3);
+  }
+
+  .pl-num {
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 18px;
+    text-align: right;
+  }
+
+  .pl-info { flex: 1; overflow: hidden; }
+
+  .pl-title {
+    font-size: 13px;
+    color: var(--cream2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .playlist-item.current .pl-title { color: var(--accent); }
+
+  .scan-btn {
+    margin-top: 12px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Jost', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-start;
+  }
+
+  .scan-btn:hover { border-color: var(--sage); color: var(--sage); }
+
+  /* ── ファイルタブ ── */
+  .file-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .file-path {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .file-list { max-height: 320px; overflow-y: auto; }
+  .file-list::-webkit-scrollbar { width: 3px; }
+  .file-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    transition: background 0.15s;
+    cursor: default;
+  }
+
+  .file-item:hover { background: var(--card2); }
+  .file-icon { font-size: 15px; min-width: 20px; }
+
+  .file-name {
+    flex: 1;
+    color: var(--cream2);
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-name:hover { color: var(--accent); }
+  .file-size { font-size: 11px; color: var(--muted); min-width: 52px; text-align: right; }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    opacity: 0;
+  }
+
+  .file-item:hover .del-btn { opacity: 1; }
+  .del-btn:hover { color: #e07060; background: rgba(224,112,96,0.1); }
+
+  .upload-area {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 14px;
+    display: block;
+  }
+
+  .upload-area:hover { border-color: var(--sage2); color: var(--sage); }
+  .upload-area input { display: none; }
+
+  /* ── フォトタブ ── */
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .photo-thumb {
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .photo-thumb:hover {
+    border-color: var(--accent);
+    transform: scale(1.02);
+  }
+
+  /* ── システムタブ ── */
+  .sys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+
+  .sys-btn {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--cream2);
+    font-family: 'Jost', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sys-btn:hover { border-color: var(--sage2); color: var(--cream); }
+
+  .sys-info {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 2.2;
+  }
+
+  .sys-info span { color: var(--sage); }
+
+  /* トースト */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--card);
+    border: 1px solid var(--accent);
+    color: var(--cream);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 10px 18px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; }
+
+  /* ビジュアライザー */
+  .visualizer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 3px;
+    height: 20px;
+    margin: 6px 0;
+  }
+
+  .vbar {
+    width: 3px;
+    background: var(--sage2);
+    border-radius: 1px;
+    min-height: 2px;
+    animation: veq 0.8s ease-in-out infinite alternate;
+  }
+
+  .vbar:nth-child(2) { animation-delay:.1s; animation-duration:.7s; background: var(--sage); }
+  .vbar:nth-child(3) { animation-delay:.2s; animation-duration:.9s; }
+  .vbar:nth-child(4) { animation-delay:.15s; animation-duration:.6s; background: var(--accent2); }
+  .vbar:nth-child(5) { animation-delay:.05s; animation-duration:1s; background: var(--sage); }
+  .vbar:nth-child(6) { animation-delay:.25s; animation-duration:.75s; }
+  .vbar:nth-child(7) { animation-delay:.1s; animation-duration:.85s; background: var(--accent2); }
+
+  @keyframes veq { from { height: 2px; } to { height: 18px; } }
+  .visualizer.paused .vbar { animation-play-state: paused; height: 3px; }
+
+  @media (max-width: 480px) {
+    .tab { padding: 16px; }
+    nav button { padding: 8px 10px; font-size: 11px; }
+    .sys-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<header>
+  <div class="logo">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 2C8 2 5 6 5 10c0 5 7 12 7 12s7-7 7-12c0-4-3-8-7-8z"/>
+      <circle cx="12" cy="10" r="2.5"/>
+    </svg>
+    Jardin
+  </div>
+  <div class="clock" id="clock">00:00</div>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('player',this)">Player</button>
+  <button onclick="switchTab('files',this)">Files</button>
+  <button onclick="switchTab('photos',this)">Photos</button>
+  <button onclick="switchTab('system',this)">System</button>
+  <button onclick="switchTab('mail',this)">Mail</button>
+</nav>
+
+<!-- プレイヤー -->
+<div class="tab active" id="tab-player">
+  <div class="player-layout">
+
+    <div class="artwork-card">
+      <div class="artwork" id="artwork">
+        <!-- 植物SVGアート -->
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="60" cy="105" rx="18" ry="4" fill="rgba(90,122,90,0.3)"/>
+          <path d="M60 100 Q60 70 60 50" stroke="#5a7a5a" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M60 80 Q45 68 35 72" stroke="#5a7a5a" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M60 70 Q75 58 83 64" stroke="#5a7a5a" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M60 90 Q48 82 42 86" stroke="#7a9e7a" stroke-width="1" stroke-linecap="round"/>
+          <ellipse cx="34" cy="70" rx="10" ry="7" fill="#4a6e4a" opacity="0.8" transform="rotate(-20 34 70)"/>
+          <ellipse cx="84" cy="62" rx="10" ry="7" fill="#4a6e4a" opacity="0.8" transform="rotate(15 84 62)"/>
+          <ellipse cx="41" cy="84" rx="7" ry="5" fill="#5a7a5a" opacity="0.7" transform="rotate(-10 41 84)"/>
+          <circle cx="58" cy="32" r="14" fill="#c4956a" opacity="0.9"/>
+          <circle cx="58" cy="32" r="8" fill="#d4a57a"/>
+          <path d="M52 26 Q58 18 64 26" stroke="#b5704a" stroke-width="1" fill="none"/>
+          <path d="M50 34 Q44 28 50 22" stroke="#b5704a" stroke-width="1" fill="none"/>
+          <path d="M66 34 Q72 28 66 22" stroke="#b5704a" stroke-width="1" fill="none"/>
+          <circle cx="72" cy="22" r="9" fill="#c4956a" opacity="0.7"/>
+          <circle cx="72" cy="22" r="5" fill="#d4a57a" opacity="0.8"/>
+          <circle cx="46" cy="20" r="7" fill="#c4956a" opacity="0.6"/>
+          <circle cx="46" cy="20" r="4" fill="#e8c49a" opacity="0.7"/>
+          <path d="M60 50 Q55 42 58 36" stroke="#7a9e7a" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="song-info">
+        <div class="song-title" id="song-title">— No Song —</div>
+        <div class="song-state" id="song-state">stopped</div>
+        <div class="visualizer paused" id="visualizer">
+          <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
+          <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
+          <div class="vbar"></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar" onclick="seekBar(event)">
+            <div class="progress-fill" id="progress"></div>
+          </div>
+          <div class="time-row">
+            <span id="t-elapsed">0:00</span>
+            <span id="t-duration">0:00</span>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="ctrl-btn" onclick="prevSong()" title="前の曲">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6L9.5 12z"/>
+            </svg>
+          </button>
+          <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()">
+            <svg id="play-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+          <button class="ctrl-btn" onclick="nextSong()" title="次の曲">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 6h2v12h-2V6zm-3.5 6L4 6v12l8.5-6z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="volume-row">
+          <span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+            </svg>
+          </span>
+          <input type="range" min="0" max="100" value="80" id="volume-slider" oninput="setVolume(this.value)">
+          <span id="vol-val">80</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- プレイリスト -->
+    <div class="upnext-card">
+      <div class="section-label">Playlist</div>
+      <div class="playlist" id="playlist">
+        <div style="color:var(--muted);font-size:13px;padding:12px 0;">Loading...</div>
+      </div>
+      <button class="scan-btn" onclick="updateDb()">↻ Scan Library</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ファイル -->
+<div class="tab" id="tab-files">
+  <div class="file-card">
+    <div class="section-label">File Manager</div>
+    <div class="file-path" id="file-path">/home/pi/music</div>
+    <div class="file-list" id="file-list"></div>
+    <label class="upload-area">
+      <input type="file" multiple onchange="uploadFiles(this, currentDir)">
+      + Upload files
+    </label>
+  </div>
+</div>
+
+<!-- フォト -->
+<div class="tab" id="tab-photos">
+  <div class="file-card">
+    <div class="section-label">Photos</div>
+    <div class="photo-grid" id="photo-grid">
+      <div style="color:var(--muted);font-size:13px;">No photos yet</div>
+    </div>
+    <label class="upload-area" style="margin-top:16px;">
+      <input type="file" multiple accept="image/*" onchange="uploadFiles(this, '/home/pi/photos')">
+      + Upload photos
+    </label>
+  </div>
+</div>
+
+<!-- システム -->
+
+<div class="tab" id="tab-mail">
+  <div class="file-card">
+    <div class="section-label">Send Message</div>
+    <textarea id="msg-input" style="width:100%;height:120px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--cream);font-family:Jost,sans-serif;font-size:14px;padding:10px;resize:none;" placeholder="Type a message..."></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button class="scan-btn" style="flex:1;" onclick="sendMessage()">Send to Display</button>
+      <button class="scan-btn" onclick="clearMessage()">Clear</button>
+    </div>
+    <div id="msg-status" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+  </div>
+</div>
+<div class="tab" id="tab-system">
+  <div class="file-card">
+    <div class="section-label">System</div>
+    <div class="sys-grid">
+      <button class="sys-btn" onclick="systemReboot()">↺ Reboot</button>
+      <button class="sys-btn" onclick="systemShutdown()">⏻ Shutdown</button>
+      <button class="sys-btn" onclick="systemUpdate()">↑ Update</button>
+    </div>
+    <div class="sys-info">
+      <div>SSH &nbsp;&nbsp;&nbsp;<span>pi@100.113.62.66</span></div>
+      <div>Local &nbsp;<span>raspberrypi.local:5000</span></div>
+      <div>VPN &nbsp;&nbsp;<span>Tailscale connected</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+<div class="toast" id="toast"></div>
+
+<script>
+let currentState = 'stop';
+let currentDir = '/home/pi/music';
+
+// 時計
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+setInterval(updateClock, 1000); updateClock();
+
+// タブ
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'files') loadFiles(currentDir);
+  if (name === 'photos') loadPhotos();
+}
+
+// API
+async function api(url, method='GET', body=null) {
+  const opts = { method };
+  if (body) { opts.headers={'Content-Type':'application/json'}; opts.body=JSON.stringify(body); }
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function fmtTime(s) {
+  s = Math.floor(parseFloat(s) || 0);
+  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+
+// UI状態即時更新
+function setUIState(state) {
+  currentState = state;
+  const icon = document.getElementById('play-icon');
+  const artwork = document.getElementById('artwork');
+  const viz = document.getElementById('visualizer');
+  document.getElementById('song-state').textContent = state === 'play' ? 'playing' : state;
+  if (state === 'play') {
+    icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+    artwork.classList.add('spinning');
+    viz.classList.remove('paused');
+  } else {
+    icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    artwork.classList.remove('spinning');
+    viz.classList.add('paused');
+  }
+}
+
+// ステータス更新
+async function updateStatus() {
+  const s = await api('/api/status');
+  if (s.error) return;
+  setUIState(s.state);
+  document.getElementById('song-title').textContent = s.song || '— No Song —';
+  const elapsed = parseFloat(s.elapsed)||0;
+  const duration = parseFloat(s.duration)||1;
+  document.getElementById('progress').style.width = (elapsed/duration*100) + '%';
+  document.getElementById('t-elapsed').textContent = fmtTime(elapsed);
+  document.getElementById('t-duration').textContent = fmtTime(duration);
+  const vol = parseInt(s.volume)||0;
+  document.getElementById('volume-slider').value = vol;
+  document.getElementById('vol-val').textContent = vol;
+}
+
+// プレイリスト
+async function loadPlaylist() {
+  const pl = await api('/api/playlist');
+  if (!Array.isArray(pl)) return;
+  const el = document.getElementById('playlist');
+  if (pl.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px 0;">Empty — add music files</div>';
+    return;
+  }
+  el.innerHTML = pl.map((s,i) => {
+    const name = s.title || s.file.split('/').pop().replace(/\.[^.]+$/,'');
+    return `<div class="playlist-item" onclick="playPos(${i})">
+      <span class="pl-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="pl-info"><div class="pl-title">${name}</div></div>
+    </div>`;
+  }).join('');
+}
+
+async function playPos(pos) {
+  await api('/api/play','POST',{pos});
+  setTimeout(updateStatus,400);
+}
+
+// コントロール
+async function togglePlay() {
+  if (currentState === 'play') {
+    setUIState('pause');
+    await api('/api/pause','POST');
+  } else {
+    setUIState('play');
+    await api('/api/play','POST');
+  }
+  setTimeout(updateStatus, 500);
+}
+
+async function prevSong() {
+  setUIState('play');
+  document.getElementById('song-title').textContent = '←';
+  await api('/api/prev','POST');
+  setTimeout(updateStatus,600);
+  setTimeout(loadPlaylist,700);
+}
+
+async function nextSong() {
+  setUIState('play');
+  document.getElementById('song-title').textContent = '→';
+  await api('/api/next','POST');
+  setTimeout(updateStatus,600);
+  setTimeout(loadPlaylist,700);
+}
+
+async function setVolume(v) {
+  document.getElementById('vol-val').textContent = v;
+  await api('/api/volume','POST',{volume:parseInt(v)});
+}
+
+async function updateDb() {
+  await api('/api/update','POST');
+  toast('Scanning library...');
+  setTimeout(loadPlaylist,2000);
+}
+
+// ファイルマネージャー
+async function loadFiles(dir) {
+  currentDir = dir;
+  document.getElementById('file-path').textContent = dir;
+  const data = await api('/api/files?dir='+encodeURIComponent(dir));
+  if (data.error) { toast('Error: '+data.error); return; }
+  const el = document.getElementById('file-list');
+  let html = '';
+  const parent = dir.split('/').slice(0,-1).join('/');
+  if (parent.startsWith('/home/pi') && parent !== dir) {
+    html += `<div class="file-item" onclick="loadFiles('${parent}')">
+      <span class="file-icon">↑</span>
+      <span class="file-name">..</span>
+    </div>`;
+  }
+  html += data.items.map(item => {
+    const icon = item.is_dir ? '📁' : getIcon(item.name);
+    const size = item.is_dir ? '' : fmtSize(item.size);
+    const click = item.is_dir ? `loadFiles('${item.path}')` : `openFile('${item.path}')`;
+    return `<div class="file-item">
+      <span class="file-icon">${icon}</span>
+      <span class="file-name" onclick="${click}">${item.name}</span>
+      <span class="file-size">${size}</span>
+      ${!item.is_dir ? `<button class="del-btn" onclick="deleteFile('${item.path}')">✕</button>` : ''}
+    </div>`;
+  }).join('');
+  el.innerHTML = html || '<div style="color:var(--muted);padding:12px;font-size:13px;">Empty</div>';
+}
+
+function getIcon(n) {
+  const e = n.split('.').pop().toLowerCase();
+  if (['mp3','flac','wav','ogg','m4a'].includes(e)) return '♪';
+  if (['jpg','jpeg','png','gif','webp'].includes(e)) return '◎';
+  return '◈';
+}
+
+function fmtSize(b) {
+  if (b<1024) return b+'B';
+  if (b<1048576) return (b/1024).toFixed(1)+'K';
+  return (b/1048576).toFixed(1)+'M';
+}
+
+function openFile(path) {
+  window.open('/api/files/serve?path='+encodeURIComponent(path),'_blank');
+}
+
+async function deleteFile(path) {
+  if (!confirm('Delete this file?')) return;
+  const r = await api('/api/files/delete','POST',{path});
+  if (r.ok) { toast('Deleted'); loadFiles(currentDir); }
+  else toast('Error: '+r.error);
+}
+
+async function uploadFiles(input, dir) {
+  for (const file of input.files) {
+    const fd = new FormData();
+    fd.append('file', file);
+    await fetch('/api/files/upload?dir='+encodeURIComponent(dir),{method:'POST',body:fd});
+  }
+  toast('Uploaded '+input.files.length+' file(s)');
+  if (dir === currentDir) loadFiles(currentDir);
+  input.value = '';
+}
+
+// フォト
+async function loadPhotos() {
+  const data = await api('/api/files?dir=/home/pi/photos');
+  if (data.error) return;
+
+  const imgs = data.items.filter(i => /\.(jpg|jpeg|png|gif|webp)$/i.test(i.name));
+  const el = document.getElementById('photo-grid');
+  if (!imgs.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No photos yet</div>';
+    return;
+  }
+  el.innerHTML = imgs.map(img =>
+    `<img class="photo-thumb" src="/api/files/serve?path=${encodeURIComponent(img.path)}"
+      onclick="window.open(this.src,'_blank')" loading="lazy">`
+  ).join('');
+}
+
+// システム
+async function systemShutdown() {
+  if (!confirm("Shutdown the device?")) return;
+  await api("/api/system/shutdown","POST");
+  toast("Shutting down...");
+}
+async function systemReboot() {
+  if (!confirm('Reboot the device?')) return;
+  await api('/api/system/reboot','POST');
+  toast('Rebooting...');
+}
+
+async function systemUpdate() {
+  if (!confirm('Start system update?')) return;
+  await api('/api/system/update','POST');
+  toast('Update started');
+}
+
+// 初期化
+updateStatus();
+loadPlaylist();
+setInterval(updateStatus, 3000);
+setInterval(loadPlaylist, 15000);
+async function sendMessage() {
+  const msg = document.getElementById("msg-input").value.trim();
+  if (!msg) return;
+  const r = await api("/api/message","POST",{message: msg});
+  if (r.ok) { document.getElementById("msg-status").textContent = "Sent!"; setTimeout(() => document.getElementById("msg-status").textContent = "", 3000); }
+}
+async function clearMessage() {
+  await api("/api/message","DELETE");
+  document.getElementById("msg-input").value = "";
+  document.getElementById("msg-status").textContent = "Cleared";
+  setTimeout(() => document.getElementById("msg-status").textContent = "", 2000);
+}
+</script>
+</body>
+</html>
