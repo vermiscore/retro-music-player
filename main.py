@@ -45,6 +45,10 @@ try:
         last_notified_time = msgs[-1]["time"]
 except:
     pass
+
+# 起動時i2s-fix
+subprocess.Popen(["sudo", "systemctl", "restart", "i2s-fix"])
+
 # タッチ排他ロック
 touch_lock      = threading.Lock()
 last_touch_time = 0
