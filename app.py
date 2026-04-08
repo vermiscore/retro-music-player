@@ -37,6 +37,7 @@ def status():
             "song": song.get("title") or song.get("file", "").split("/")[-1] or "No song",
             "elapsed": s.get("elapsed", "0"),
             "duration": s.get("duration", "0"),
+            "repeat": s.get("repeat", "0"),
         }
     return jsonify(mpd_cmd(f))
 
@@ -47,10 +48,16 @@ def playlist():
 
 @app.route("/api/play", methods=["POST"])
 def play():
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     def f(c):
-        if "pos" in data: c.play(data["pos"])
-        else: c.play()
+        if "pos" in data:
+            c.play(data["pos"])
+        else:
+            status = c.status()
+            if status.get("state") == "pause":
+                c.pause()
+            else:
+                c.play()
         return {"ok": True}
     return jsonify(mpd_cmd(f))
 
@@ -75,9 +82,24 @@ def volume():
     def f(c): c.setvol(int(vol)); return {"ok": True}
     return jsonify(mpd_cmd(f))
 
+@app.route("/api/repeat", methods=["POST"])
+def repeat():
+    data = request.get_json(silent=True) or {}
+    state = data.get("state", 1)
+    def f(c): c.repeat(int(state)); return {"ok": True}
+    return jsonify(mpd_cmd(f))
+
 @app.route("/api/update", methods=["POST"])
 def update_db():
-    def f(c): c.update(); return {"ok": True}
+    import time
+    def f(c):
+        c.update()
+        time.sleep(2)
+        c.clear()
+        for song in c.listall():
+            if 'file' in song:
+                c.add(song['file'])
+        return {"ok": True}
     return jsonify(mpd_cmd(f))
 
 @app.route("/api/files")
@@ -180,4 +202,10 @@ def delete_message(idx):
     return jsonify({"ok": True})
 
 if __name__ == "__main__":
+    try:
+        with MPDClient() as c:
+            c.connect("localhost", 6600)
+            c.repeat(1)
+    except:
+        pass
     app.run(host="0.0.0.0", port=5000, debug=False)

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>🌿 Music Player</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -256,19 +256,16 @@
     width: 36px; height: 36px;
   }
 
-  .ctrl-btn:hover { color: var(--cream); transform: scale(1.1); }
-
-  .ctrl-btn.play-btn {
+.ctrl-btn:hover { color: var(--cream); }
+.ctrl-btn.play-btn {
     background: var(--accent);
     color: var(--bg);
     width: 48px; height: 48px;
     box-shadow: 0 4px 16px rgba(196,149,106,0.3);
   }
-
-  .ctrl-btn.play-btn:hover {
+.ctrl-btn.play-btn:hover {
     background: #d4a57a;
     color: var(--bg);
-    transform: scale(1.05);
   }
 
   /* 音量 */
@@ -637,7 +634,7 @@
           </div>
         </div>
         <div class="controls">
-          <button class="ctrl-btn" onclick="prevSong()" title="前の曲">
+          <button class="ctrl-btn" onclick="prevSong(event)" title="前の曲">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6L9.5 12z"/>
             </svg>
@@ -647,7 +644,7 @@
               <path d="M8 5v14l11-7z"/>
             </svg>
           </button>
-          <button class="ctrl-btn" onclick="nextSong()" title="次の曲">
+          <button class="ctrl-btn" onclick="nextSong(event)" title="次の曲">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16 6h2v12h-2V6zm-3.5 6L4 6v12l8.5-6z"/>
             </svg>
@@ -662,6 +659,7 @@
           <input type="range" min="0" max="100" value="80" id="volume-slider" oninput="setVolume(this.value)">
           <span id="vol-val">80</span>
         </div>
+       <div style="text-align:center;margin-top:8px;"><button class="scan-btn" id="repeat-btn" onclick="toggleRepeat()">↺ Repeat: ON</button></div>
       </div>
     </div>
 
@@ -847,15 +845,16 @@ async function togglePlay() {
   setTimeout(updateStatus, 500);
 }
 
-async function prevSong() {
+async function prevSong(e) {
+  e.preventDefault();
   setUIState('play');
   document.getElementById('song-title').textContent = '←';
   await api('/api/prev','POST');
   setTimeout(updateStatus,600);
   setTimeout(loadPlaylist,700);
 }
-
-async function nextSong() {
+async function nextSong(e) {
+  e.preventDefault();
   setUIState('play');
   document.getElementById('song-title').textContent = '→';
   await api('/api/next','POST');
@@ -863,6 +862,12 @@ async function nextSong() {
   setTimeout(loadPlaylist,700);
 }
 
+let repeatState = 1;
+async function toggleRepeat() {
+  repeatState = repeatState ? 0 : 1;
+  await api("/api/repeat","POST",{state: repeatState});
+  document.getElementById("repeat-btn").textContent = "↺ Repeat: " + (repeatState ? "ON" : "OFF");
+}
 async function setVolume(v) {
   document.getElementById('vol-val').textContent = v;
   await api('/api/volume','POST',{volume:parseInt(v)});
