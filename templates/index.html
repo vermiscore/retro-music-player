@@ -666,6 +666,15 @@
     <!-- プレイリスト -->
     <div class="upnext-card">
       <div class="section-label">Playlist</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <button class="scan-btn" onclick="setGenre('all')">All</button>
+        <button class="scan-btn" onclick="setGenre('classical')">Classical</button>
+        <button class="scan-btn" onclick="setGenre('jazz')">Jazz</button>
+        <button class="scan-btn" onclick="setGenre('lofi')">Lofi</button>
+        <button class="scan-btn" onclick="setGenre('acoustic')">Acoustic</button>
+        <button class="scan-btn" onclick="setGenre('metal')">Metal</button>
+        <button class="scan-btn" onclick="setGenre('others')">Others</button>
+      </div>
       <div class="playlist" id="playlist">
         <div style="color:var(--muted);font-size:13px;padding:12px 0;">Loading...</div>
       </div>
@@ -871,6 +880,13 @@ async function toggleRepeat() {
 async function setVolume(v) {
   document.getElementById('vol-val').textContent = v;
   await api('/api/volume','POST',{volume:parseInt(v)});
+}
+
+async function setGenre(genre) {
+  await api('/api/genre', 'POST', {genre});
+  toast('Playing: ' + genre);
+  setTimeout(loadPlaylist, 1000);
+  setTimeout(updateStatus, 1000);
 }
 
 async function updateDb() {

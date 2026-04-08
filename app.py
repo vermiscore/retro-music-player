@@ -102,6 +102,25 @@ def update_db():
         return {"ok": True}
     return jsonify(mpd_cmd(f))
 
+@app.route("/api/genre", methods=["POST"])
+def set_genre():
+    import time
+    genre = request.json.get("genre", "all")
+    def f(c):
+        c.clear()
+        if genre == "all":
+            for song in c.listall():
+                if 'file' in song:
+                    c.add(song['file'])
+        else:
+            for song in c.listall():
+                if 'file' in song and song['file'].startswith(genre + '/'):
+                    c.add(song['file'])
+        if c.playlistinfo():
+            c.play(0)
+        return {"ok": True}
+    return jsonify(mpd_cmd(f))
+
 @app.route("/api/files")
 def list_files():
     directory = request.args.get("dir", MUSIC_DIR)
