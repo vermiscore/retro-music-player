@@ -19,7 +19,7 @@ NAV_TABS = [
     ("Scene", SCREEN_SCENE),
     ("Photo", SCREEN_PHOTO),
     ("Mail",  SCREEN_MAIL),
-    ("Clock", SCREEN_CLOCK),
+    ("Info",  SCREEN_CLOCK),
 ]
 
 # ── カラー ──────────────────────────────────────────────

@@ -6,6 +6,7 @@ import time, datetime, threading, json
 import touch
 from scenes.common import *
 from scenes import home, music, clock, mail, photo, scene_select
+_clock_speech_now = None
 
 import importlib
 import os
@@ -111,6 +112,8 @@ while True:
                 current_scene_id = sid
                 current_screen   = SCREEN_LANDSCAPE
 
+        elif current_screen == SCREEN_CLOCK:
+            clock.handle_touch(tx, ty, now, mpd)
         elif current_screen == SCREEN_MAIL:
             mail.handle_touch(tx, ty)
 

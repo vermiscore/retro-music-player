@@ -971,9 +971,25 @@ async function loadPhotos() {
     return;
   }
   el.innerHTML = imgs.map(img =>
-    `<img class="photo-thumb" src="/api/files/serve?path=${encodeURIComponent(img.path)}"
-      onclick="window.open(this.src,'_blank')" loading="lazy">`
+    `<div style="position:relative;aspect-ratio:1;">
+      <img class="photo-thumb" src="/api/files/serve?path=${encodeURIComponent(img.path)}"
+        onclick="window.open(this.src,'_blank')" loading="lazy"
+        style="width:100%;height:100%;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;">
+      <button onclick="deletePhoto('${img.path}')"
+        style="position:absolute;top:5px;right:5px;background:rgba(0,0,0,0.6);border:none;color:#fff;
+               border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:13px;line-height:1;
+               opacity:0;transition:opacity 0.2s;"
+        onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=0"
+        ontouchstart="this.style.opacity=1">✕</button>
+    </div>`
   ).join('');
+}
+
+async function deletePhoto(path) {
+  if (!confirm('Delete this photo?')) return;
+  const r = await api('/api/files/delete','POST',{path});
+  if (r.ok) { toast('Deleted'); loadPhotos(); }
+  else toast('Error: '+r.error);
 }
 
 // システム
