@@ -9,7 +9,7 @@ import numpy as np
 
 W2, H2 = 320, 240
 
-_bg = Image.open("/home/pi/scenes/ocean_bg.png").convert("RGB").resize((W2, H2))
+_bg = Image.open("/home/pi/scenes/underwater.png").convert("RGB").resize((W2, H2))
 _bg_np = np.array(_bg)
 
 _cap = cv2.VideoCapture("/home/pi/scenes/steve_dance.mp4")

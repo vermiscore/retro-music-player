@@ -5,10 +5,10 @@ SCENES = [
     {"label": "Landscape", "id": "landscape", "desc": "Country road"},
     {"label": "Dance",     "id": "dance",     "desc": "Steve underwater"},
     {"label": "Rain",      "id": "rain",      "desc": "Rainy night"},
-    {"label": "Night",     "id": "night",     "desc": "Coming soon"},
-    {"label": "Snow",      "id": "snow",      "desc": "Coming soon"},
-    {"label": "Ocean",     "id": "ocean",     "desc": "Coming soon"},
-    {"label": "Forest",    "id": "forest",    "desc": "Coming soon"},
+    {"label": "Night",     "id": "night",     "desc": "Starry night sky"},
+    {"label": "Snow",      "id": "snow",      "desc": "Snowy landscape"},
+    {"label": "Ocean",     "id": "ocean",     "desc": "Sunset ocean"},
+    {"label": "Forest",    "id": "forest",    "desc": "Deep forest"},
 ]
 
 ITEM_H  = 38

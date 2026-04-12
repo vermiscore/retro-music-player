@@ -36,16 +36,16 @@ last_song    = ""
 
 notification_text  = ""
 notification_timer = 0
-last_notified_time = ""
+last_notified_time = "0"
 
-# 起動時の最新メッセージ時刻を記録
+# 起動時のメッセージ数を記録
 try:
     with open("/home/pi/messages.json") as f:
         msgs = json.load(f)
-    if msgs:
-        last_notified_time = msgs[-1]["time"]
+    last_notified_count = len(msgs)
 except:
-    pass
+    last_notified_count = 0
+    
 
 # 起動時i2s-fix
 subprocess.Popen(["sudo", "systemctl", "restart", "i2s-fix"])
@@ -67,14 +67,14 @@ while True:
     now = datetime.datetime.now()
     mpd = get_mpd()
 
-    # メッセージ通知チェック
+    # メッセージ通知チェック（増えた時だけ）
     try:
         with open("/home/pi/messages.json") as f:
             msgs = json.load(f)
-        if msgs and msgs[-1]["time"] != last_notified_time:
+        if len(msgs) > last_notified_count:
             notification_text = "* You got a message! *"
             notification_timer = 100
-            last_notified_time = msgs[-1]["time"]
+        last_notified_count = len(msgs)
     except:
         pass
 
