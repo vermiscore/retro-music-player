@@ -8,6 +8,8 @@ Built as a Mother's Day gift 💐
 
 ![Photo of assembled device](images/assembled.jpg)
 
+![PCB Layout](images/pcb_layout.png)
+
 ---
 
 ## ✨ Features
