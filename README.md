@@ -29,7 +29,7 @@ Built as a Mother's Day gift 💐
 | AirPlay (shairport-sync) | ✅ |
 | MAX98357A amp wiring & audio output | ✅ |
 | C++ effects processing | ❌ |
-| Additional landscape scenes (Rain / Night / Snow) | ❌ |
+
 
 ---
 
