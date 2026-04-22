@@ -6,7 +6,7 @@ Built as a Mother's Day gift 💐
 
 ---
 
-![Photo of assembled device](photos/assembled.jpg)
+![Photo of assembled device](images/assembled.jpg)
 
 ---
 
